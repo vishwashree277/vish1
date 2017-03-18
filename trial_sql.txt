@@ -1,0 +1,125 @@
+public JSONArray queryMemberRegistration1(
+		                            String FIRST_NAME,  
+		                            String LAST_NAME,  
+		                            String DOB,
+		                            String ADDRESS,
+		                           // String CONTACT_NUMBER,
+		                            int CONTACT_NUMBER,
+		                            String EMAIL,
+		                            String GENDER
+		                            ) 
+		throws Exception {
+
+PreparedStatement query = null;
+PreparedStatement query1 = null;
+Connection conn = null;
+ToJSON converter = new ToJSON();
+JSONArray json = new JSONArray();
+try {
+conn = oracleclaimdbconn();
+  String MEMBER_ID= null;
+java.sql.PreparedStatement ps = conn
+.prepareStatement("select * from( select substr( MEMBER_ID,4,4) from MEMBER_MASTER order by substr( MEMBER_ID,4, 4) desc) where rownum<=1");
+ResultSet rs = ps.executeQuery();
+//String MEMBER_ID=null;
+if (!rs.next()) {
+	MEMBER_ID= "MEM0001";
+} else {
+String uniqueStr = rs.getString(1);
+int uniqueInt = Integer.parseInt(uniqueStr);
+++uniqueInt;
+     MEMBER_ID = "MEM000" + uniqueInt;
+}
+/*ps1=conn.prepareStatement("insert into MEMBER_MASTER"+"(MEMBER_ID)"+"VALUES(?)");
+ps1.setString(1,MEMBER_ID);
+ps1.executeQuery();
+ps1.close();*/
+query = conn.prepareStatement("insert into MEMBER_MASTER" +
+"(MEMBER_ID,FIRST_NAME,LAST_NAME,DOB,ADDRESS, CONTACT_NUMBER,EMAIL,GENDER)" +
+"VALUES (?,?,?,?,?,?,?,?)");
+query.setString(1,MEMBER_ID);
+query.setString(2,FIRST_NAME);
+query.setString(3,LAST_NAME);
+query.setString(4,DOB);
+query.setString(5,ADDRESS);
+//int contact_number = Integer.parseInt(CONTACT_NUMBER);
+//query.setInt(5,contact_number);
+query.setInt(6,CONTACT_NUMBER);
+query.setString(7,EMAIL);
+query.setString(8,GENDER);
+
+ResultSet rs1 = query.executeQuery();
+
+json = converter.toJSONArray(rs1);
+query.close();
+query1=conn.prepareStatement("insert into INSURANCE_DETAILS"+"(MEMBER_ID)"+"VALUES(?)");
+query1.setString(1,MEMBER_ID);
+ResultSet rs2 = query.executeQuery();
+
+json = converter.toJSONArray(rs2);
+query1.close();
+//query.executeUpdate(); 
+
+
+} catch(SQLException sqlError) {
+	sqlError.printStackTrace();
+	return json;
+}
+catch(Exception e) {
+	e.printStackTrace();
+	return json;
+}
+finally {
+	if (conn != null) conn.close();
+}
+
+return json;
+}
+
+public JSONArray queryMemberRegistration2(int NOMINEE_COUNT,  
+        String INSURANCE_TYPE,  
+        int INSURANCE_AMOUNT,
+        int MAX_CLAIMABLE_AMOUNT
+        ) throws Exception{
+	Connection conn = null;
+	ToJSON converter = new ToJSON();
+	JSONArray json = new JSONArray();
+	PreparedStatement query = null;
+	PreparedStatement query1 = null;
+	try{
+		conn = oracleclaimdbconn();
+		 String MEMBER_ID= null;
+query=conn.prepareStatement("select M.MEMBER_ID FROM MEMBER_MASTER M JOIN INSURANCE_DETAILS I ON M.MEMBER_ID=I.MEMBER_ID");		
+query.setString(1,MEMBER_ID);	
+ResultSet rs = query.executeQuery();
+
+json = converter.toJSONArray(rs);
+query.close();
+query1=conn.prepareStatement("insert into INSURANCE_DETAILS" + 
+"(NOMINEE_COUNT,INSURANCE_TYPE,INSURANCE_AMOUNT,MAX_CLAIMABLE_AMOUNT)"+
+"VALUES(?,?,?,?)");
+query1.setInt(1,NOMINEE_COUNT);
+query1.setString(2,INSURANCE_TYPE);
+query1.setInt(3,INSURANCE_AMOUNT);
+query1.setInt(4,MAX_CLAIMABLE_AMOUNT);
+ResultSet rs1 = query1.executeQuery();
+
+json = converter.toJSONArray(rs1);
+query1.close();
+	}
+	
+	catch(SQLException sqlError) {
+		sqlError.printStackTrace();
+		return json;
+	}
+	catch(Exception e) {
+		e.printStackTrace();
+		return json;
+	}
+	finally {
+		if (conn != null) conn.close();
+	}
+
+	return json;
+	}
+}
